@@ -1,2 +1,6 @@
 # Minesweepin
-Minesweeper clone in Java
+Minesweeper clone in Java.
+
+`make` or `javac *.java`
+
+`java Minesweeper` to run
