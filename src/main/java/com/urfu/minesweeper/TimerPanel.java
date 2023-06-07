@@ -1,28 +1,28 @@
-package com.urfu.minesweeper;/*
-TimerPanel is the modified JPanel that will hold the game clock. 
+package com.urfu.minesweeper;
+/*
+TimerPanel is the modified JPanel that will hold the game clock.
 It attaches to a single game's GameData class.
 */
 
 import javax.swing.*;
-import java.awt.*;
 
 class TimerPanel extends JPanel {
 	
-	GameData data;
-	JLabel label;
+	GameData gameData;
+	JLabel timeLabel;
 
 	public TimerPanel(){
-		label = new JLabel("0");
-		add(label);
+		timeLabel = new JLabel("0");
+		add(timeLabel);
 	}
 
-	public void updateData(GameData data_in){
-		data = data_in;
-		label.setText(Integer.toString(data.time));
+	public void updateData(GameData newData){
+		gameData = newData;
+		refresh();
 	}
 
 	public void refresh(){
-		label.setText(Integer.toString(data.time));
+		timeLabel.setText(Integer.toString(gameData.time));
 		repaint();
 	}
 }

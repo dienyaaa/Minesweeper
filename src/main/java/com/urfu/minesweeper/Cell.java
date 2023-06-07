@@ -1,157 +1,133 @@
-package com.urfu.minesweeper;/*
+package com.urfu.minesweeper;
+/*
 Cell is the lowest level of minesweeper. Each cell is an extended JButton
 that also holds state information such as clicked/unclicked etc.
 */
 
 import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 
 public class Cell extends JButton {
-	
-	GameData data;
 
-	private boolean lonely;
-	private boolean flagged;
-	private boolean isMine;
+    GameData data;
 
-	private int dangerousNeighbours;
-	private List<ImageIcon> tiles;
+    private boolean isLonely;
+    private boolean isFlagged;
+    private boolean isMine;
 
-	public Cell(GameData data_in){
-		
-		data = data_in;
-		flagged = false;
-		isMine = false;
-		setEnabled(true);
+    private int countOfDangerousNeighbours;
 
-		// Want to modify this. Seems inefficient.
-		tiles = new ArrayList<ImageIcon>();
-		tiles.add(new ImageIcon(this.getClass().getClassLoader().getResource("res/0.png")));
-		tiles.add(new ImageIcon(this.getClass().getClassLoader().getResource("res/1.png")));
-		tiles.add(new ImageIcon(this.getClass().getClassLoader().getResource("res/2.png")));
-		tiles.add(new ImageIcon(this.getClass().getClassLoader().getResource("res/3.png")));
-		tiles.add(new ImageIcon(this.getClass().getClassLoader().getResource("res/4.png")));
-		tiles.add(new ImageIcon(this.getClass().getClassLoader().getResource("res/5.png")));
-		tiles.add(new ImageIcon(this.getClass().getClassLoader().getResource("res/6.png")));
-		tiles.add(new ImageIcon(this.getClass().getClassLoader().getResource("res/7.png")));
-		tiles.add(new ImageIcon(this.getClass().getClassLoader().getResource("res/8.png")));
-		tiles.add(new ImageIcon(this.getClass().getClassLoader().getResource("res/unclicked.png")));
-		tiles.add(new ImageIcon(this.getClass().getClassLoader().getResource("res/mine.png")));
-		tiles.add(new ImageIcon(this.getClass().getClassLoader().getResource("res/flag.png")));
+    public Cell(GameData gameData) {
 
-		setIcon(tiles.get(9));
+        data = gameData;
+        isFlagged = false;
+        isMine = false;
+        setEnabled(true);
 
-		// Use a mouseListener because we want right click as well
-		MouseListener clicker = new MouseListener(){
+        setIcon(Icons.get("unclicked"));
 
-			public void mouseClicked(MouseEvent e) {
-				if (isEnabled()) {
-					if (SwingUtilities.isLeftMouseButton(e)) 
-					{	
-						leftClick();
-					}
-					else if (SwingUtilities.isRightMouseButton(e))
-					{
-						toggleFlag();
-					}
-				}
-			}
+        // Use a mouseListener because we want right click as well
+        MouseListener clicker = new MouseListener() {
 
-			// Other methods that have to be included in the listener
-			public void mouseEntered(MouseEvent e) {}
-			public void mouseExited(MouseEvent e) {}
-			public void mousePressed(MouseEvent e) {}
-			public void mouseReleased(MouseEvent e) {}
+            public void mouseClicked(MouseEvent mouseEvent) {
+                if (isEnabled()) {
+                    if (SwingUtilities.isLeftMouseButton(mouseEvent)) {
+                        leftClick();
+                    } else if (SwingUtilities.isRightMouseButton(mouseEvent)) {
+                        toggleFlag();
+                    }
+                }
+            }
 
-		};
-		addMouseListener(clicker);
-	}
+            // Other methods that have to be included in the listener
+            public void mouseEntered(MouseEvent mouseEvent) {
+            }
 
-	public void setMine(){
-		isMine = true;
-	}
+            public void mouseExited(MouseEvent mouseEvent) {
+            }
 
-	public boolean isMine(){
-		return isMine;
-	}
+            public void mousePressed(MouseEvent mouseEvent) {
+            }
 
-	private void toggleFlag(){
-		if (flagged) 
-		{
-			flagged = false;
-			setIcon(tiles.get(9));
-			setDisabledIcon(tiles.get(9));
-		} 
-		else if(flagged == false)
-		{
-			flagged = true;
-			setIcon(tiles.get(11));
-			setDisabledIcon(tiles.get(11));
-		}
+            public void mouseReleased(MouseEvent mouseEvent) {
+            }
 
-		data.win();
-	}
+        };
+        addMouseListener(clicker);
+    }
 
-	private void leftClick(){
+    public void setMine() {
+        isMine = true;
+    }
 
-		data.inProgress();
-		boolean autocleared = false;
-		setEnabled(false);
+    public boolean isMine() {
+        return isMine;
+    }
 
-		if (isMine) 
-		{
-			data.lose();
-		} 
-		else
-		{	
-			reveal();
-		}
+    private void updateIcon(String iconName) {
+        setIcon(Icons.get(iconName));
+        setDisabledIcon(Icons.get(iconName));
+    }
 
-		while(autocleared == false)
-		{	
-			autocleared = data.autoRevealMap();
-		}
+    private void toggleFlag() {
+        if (isFlagged) {
+            isFlagged = false;
+            updateIcon("unclicked");
+        } else {
+            isFlagged = true;
+            updateIcon("flag");
+        }
 
-		data.win();
-	}
+        data.endIfGameWon();
+    }
 
-	public void reveal(){
+    private void leftClick() {
+        data.inProgress();
+        boolean autoCleared = false;
+        setEnabled(false);
 
-		setEnabled(false);
+        if (isMine) {
+            data.lose();
+        } else {
+            reveal();
+        }
 
-		if (isMine()) 
-		{
-			setIcon(tiles.get(10));
-			setDisabledIcon(tiles.get(10));
-		}
-		else
-		{
-			int index = getDangerousNeighbours();
-			setIcon(tiles.get(index));
-			setDisabledIcon(tiles.get(index));
-		}
-	}
+        while (!autoCleared) {
+            autoCleared = data.autoRevealMap();
+        }
 
-	public boolean isFlagged(){
-		return flagged;
-	}
+        data.endIfGameWon();
+    }
 
-	public void setLonely(){
-		lonely = true;
-	}
+    public void reveal() {
+        setEnabled(false);
 
-	public boolean isLonely(){
-		return lonely;
-	}
+        if (isMine()) {
+            updateIcon("mine");
+        } else {
+            String countOfDangerousNeighbours = String.valueOf(getCountOfDangerousNeighbours());
+            updateIcon(countOfDangerousNeighbours);
+        }
+    }
 
-	public int getDangerousNeighbours(){
-		return dangerousNeighbours;
-	}
+    public boolean isFlagged() {
+        return isFlagged;
+    }
 
-	public void setDangerousNeighbours(int num){
-		dangerousNeighbours = num;
-	}
+    public void setLonely() {
+        isLonely = true;
+    }
+
+    public boolean isLonely() {
+        return isLonely;
+    }
+
+    public int getCountOfDangerousNeighbours() {
+        return countOfDangerousNeighbours;
+    }
+
+    public void setCountOfDangerousNeighbours(int countOfDangerousNeighbours) {
+        this.countOfDangerousNeighbours = countOfDangerousNeighbours;
+    }
 }
