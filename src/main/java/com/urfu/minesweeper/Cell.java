@@ -1,4 +1,4 @@
-/* 
+package com.urfu.minesweeper;/*
 Cell is the lowest level of minesweeper. Each cell is an extended JButton
 that also holds state information such as clicked/unclicked etc.
 */

@@ -1,4 +1,4 @@
-/* 
+package com.urfu.minesweeper;/*
 BoardPanel is the single JPanel that all games get loaded to. The game
 data for a single game is stored in an attached GameData object.
 */

@@ -1,4 +1,4 @@
-/*
+package com.urfu.minesweeper;/*
 The Minesweeper class creates an instance of the main program and starts up
 the graphics thread.
 */

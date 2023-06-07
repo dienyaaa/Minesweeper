@@ -1,4 +1,4 @@
-/*
+package com.urfu.minesweeper;/*
 BoardData contains all data attached to a single game of minesweeper. 
 That is, level of difficulty, current mine map etc.
 */

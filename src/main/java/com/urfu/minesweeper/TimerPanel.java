@@ -1,4 +1,4 @@
-/* 
+package com.urfu.minesweeper;/*
 TimerPanel is the modified JPanel that will hold the game clock. 
 It attaches to a single game's GameData class.
 */

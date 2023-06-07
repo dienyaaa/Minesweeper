@@ -1,4 +1,4 @@
-/*
+package com.urfu.minesweeper;/*
 The gamewindow is the top-level container for all graphical components and
 panels, including the control buttons.
 */

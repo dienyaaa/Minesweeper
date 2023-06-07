@@ -1,4 +1,4 @@
-/*
+package com.urfu.minesweeper;/*
 ControlPanel is a modified JPanel containing the control buttons
 new game, difficulty, quit
 */
