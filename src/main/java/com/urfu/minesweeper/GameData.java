@@ -1,256 +1,181 @@
-package com.urfu.minesweeper;/*
+package com.urfu.minesweeper;
+/*
 BoardData contains all data attached to a single game of minesweeper. 
 That is, level of difficulty, current mine map etc.
 */
 
+import javax.swing.*;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
 class GameData {
+    class Tick extends TimerTask {
+        public void run() {
+            time++;
+            timerPanel.refresh();
+        }
+    }
 
-	/* Nested class to increment the game clock - only ever used here */	
-	class Tick extends TimerTask{
-		public void run() {
-			time++;
-			t_panel.refresh();
-	    }
-	}
+    private final Timer timer;
+    protected int time = 0;
+    private boolean inProgress;
+    private final Cell[][] map;
+    private int boardSize;
+    private int mines;
+    private final BoardPanel boardPanel;
+    private final TimerPanel timerPanel;
 
-	private Timer timer;
-	protected int time = 0;
-	private boolean inProgress; 
+    public GameData(BoardPanel boardPanel, TimerPanel timerPanel, DifficultyLevel difficultyLevel) {
+        this.timerPanel = timerPanel;
+        this.timerPanel.updateData(this);
 
-	private Cell[][] map;
-	private int size;
-	private int mines;
-	private BoardPanel b_panel;
-	private TimerPanel t_panel;
+        this.boardPanel = boardPanel;
 
-	public GameData(BoardPanel bp, TimerPanel tp, int difficulty){
-		
-		t_panel = tp;
-		t_panel.updateData(this);
+        timer = new Timer();
+        inProgress = false;
+        setDifficulty(difficultyLevel);
 
-		b_panel = bp;
-		
-		timer = new Timer();
-		inProgress = false; 
-		setDifficulty(difficulty);
+        map = new Cell[boardSize][boardSize];
+        for (int i = 0; i < boardSize; i++) {
+            for (int j = 0; j < boardSize; j++) {
+                map[i][j] = new Cell(this);
+            }
+        }
+        generateMines(mines);
+        setMineCounts();
+    }
 
-		map = new Cell[size][size];
-		for(int i = 0; i < size; i++)
-		{
-			for(int j=0; j < size; j++)
-			{
-				map[i][j] = new Cell(this);
-			}
-		}
+    public void inProgress() {
+        if (!inProgress) {
+            inProgress = true;
+            timer.schedule(new Tick(), 0, 1000);
+        }
+    }
 
-		generateMines(mines);
-		setMineCounts();
-	}
+    private void setDifficulty(DifficultyLevel difficultyLevel) {
+        boardSize = difficultyLevel.getBoardSize();
+        mines = difficultyLevel.getMines();
+    }
 
-	public void inProgress(){
-		if(!inProgress){
-			inProgress = true;
-			timer.schedule(new Tick(), 0, 1000);
-		} else {
-			return;
-		}
-	}
+    private void generateMines(int number) {
+        Random random = new Random();
+        for (int i = 0; i < number; i++) {
+            int randomX = random.nextInt(boardSize);
+            int randomY = random.nextInt(boardSize);
+            map[randomX][randomY].setMine();
+        }
+    }
 
-	private void setDifficulty(int difficulty){
-		if (difficulty == 0) {
-			size = 10;
-			mines = 10;
-		}
-		else if (difficulty == 1) {
-			size = 15;
-			mines = 30;
-		}
-		else if (difficulty == 2) {
-			size = 20;
-			mines = 60;
-		}
-	}
+    private void setMineCounts() {
+        for (int x = 0; x < boardSize; x++) {
+            for (int y = 0; y < boardSize; y++) {
+                map[x][y].setCountOfDangerousNeighbours(countDangerousNeighbours(x, y));
+            }
+        }
+    }
 
-	private void generateMines(int number){
+    private int countDangerousNeighbours(int x, int y) {
+        int countDangerousNeighbours = 0;
+        for (int neighbourX = x - 1; neighbourX <= x + 1; neighbourX++) {
+            for (int neighbourY = y - 1; neighbourY <= y + 1; neighbourY++) {
+                if ((neighbourX != x || neighbourY != y) && inBounds(neighbourX, neighbourY) && map[neighbourX][neighbourY].isMine()) {
+                    countDangerousNeighbours++;
+                }
+            }
+        }
+        return countDangerousNeighbours;
+    }
 
-		for (int i = 0; i < number; i++) 
-		{
-			Random random = new Random();
-			int rand_i = random.nextInt(size);
-			int rand_j = random.nextInt(size);
+    private boolean inBounds(int i, int j) {
+        return i < boardSize && i >= 0 && j < boardSize && j >= 0;
+    }
 
-			map[rand_i][rand_j].setMine();
-		}
-	}
+    protected boolean autoRevealMap() {
+        for (int x = 0; x < boardSize; x++) {
+            for (int y = 0; y < boardSize; y++) {
+                if (!map[x][y].isEnabled()
+                        && map[x][y].getCountOfDangerousNeighbours() == 0
+                        && !map[x][y].isLonely()
+                        && !map[x][y].isMine()) {
+                    autoReveal(x, y);
+                    return false;
+                }
+            }
+        }
+        boardPanel.repaint();
+        return true;
+    }
 
-	private void setMineCounts(){
-		for(int i = 0; i < size; i++)
-		{
-			for(int j = 0; j < size; j++)
-			{	
-				map[i][j].setDangerousNeighbours( countDangerousNeighbours(i, j) );
-			}
-		}
-	}
 
-	private int countDangerousNeighbours(int ti, int tj){
+    // Automatically clear those neighbours
+    private void autoReveal(int x, int y) {
+        map[x][y].setLonely();
+        for (int neighbourX = x - 1; neighbourX <= x + 1; neighbourX++) {
+            for (int neighbourY = y - 1; neighbourY <= y + 1; neighbourY++) {
+                if (inBounds(neighbourX, neighbourY)) {
+                    map[neighbourX][neighbourY].reveal();
+                }
+            }
+        }
+    }
 
-		int count = 0;
+    // Check to see if every mine has been flagged correctly
+    protected void endIfGameWon() {
+        if (isGameWon()) {
+            timer.cancel();
+            timer.purge();
+            disableAll();
+            JOptionPane.showMessageDialog(null, "You WIN!");
+        }
+    }
 
-		for (int i = ti-1; i<= ti+1; i++) 
-		{
-			for (int j = tj-1; j<= tj+1; j++) 
-			{	
-				if (i != ti || j != tj) 
-				{
-					if ( inBounds(i, j) ) 
-					{
-						if ( map[i][j].isMine() ) 
-						{
-							count++;
-						}
-					}
-				}
-			}	
-		}
+    private boolean isGameWon() {
+        boolean gameWon = true;
+        for (int i = 0; i < boardSize; i++) {
+            for (int j = 0; j < boardSize; j++) {
+                Cell cell = map[i][j];
+                if (cell.isMine() && !cell.isFlagged() || !cell.isMine() && cell.isFlagged()) {
+                    gameWon = false;
+                    break;
+                }
+            }
+        }
+        return gameWon;
+    }
 
-		return count;
-	}
+    protected void lose() {
+        revealAll();
+        stopTimer();
+    }
 
-	private boolean inBounds(int i, int j){
+    private void disableAll() {
+        for (int i = 0; i < boardSize; i++) {
+            for (int j = 0; j < boardSize; j++) {
+                map[i][j].setEnabled(false);
+            }
+        }
+    }
 
-		if (i < size && i >= 0 && j < size && j >= 0) 
-		{
-			return true;
-		}
-		else 
-		{
-			return false;
-		}
-	}
+    private void revealAll() {
+        for (int i = 0; i < boardSize; i++) {
+            for (int j = 0; j < boardSize; j++) {
+                map[i][j].reveal();
+            }
+        }
+        boardPanel.repaint();
+    }
 
-	protected boolean autoRevealMap(){
-		boolean unchanged = true;
+    public int getBoardSize() {
+        return boardSize;
+    }
 
-		for(int i = 0; i < size; i++)
-		{
-			for(int j = 0; j < size; j++)
-			{	
-				if ( !map[i][j].isEnabled() 
-					&& map[i][j].getDangerousNeighbours() == 0 
-					&& !map[i][j].isLonely() 
-					&& !map[i][j].isMine()) 
-				{	
-					autoReveal(i, j);
-					unchanged = false;
-				}
-			}
-		}
+    public Cell getCell(int i, int j) {
+        return map[i][j];
+    }
 
-		b_panel.refresh();
-		return unchanged;
-	}
-
-	// Automatically clear those neighbours
-	private void autoReveal(int ti, int tj){
-
-		map[ti][tj].setLonely();
-
-		for(int i = ti-1; i <= ti+1; i++)
-		{
-			for(int j = tj-1; j <= tj+1; j++)
-			{
-				if (inBounds(i, j)) 
-				{
-					map[i][j].reveal();
-				}
-			}
-		}
-	}
-
-	// Check to see if every mine has been flagged correctly
-	protected void win(){
-		
-		boolean win = true;
-
-		for(int i = 0; i < size; i++)
-		{
-			for(int j = 0; j < size; j++)
-			{	
-				Cell cell = map[i][j];
-
-				if( cell.isMine() && !cell.isFlagged() )
-				{
-					win = false;
-				}
-
-				if( !cell.isMine() && cell.isFlagged() )
-				{
-					win = false;
-				}
-			}
-		}
-
-		if (win) 
-		{	
-			timer.cancel();
-			timer.purge();
-			disableAll();
-			Utils.print("YOU WIN");
-		}
-	}
-
-	protected void lose(){
-		revealAll();
-		timer.cancel();
-		timer.purge();
-	}
-
-	private void disableAll(){
-		for(int i = 0; i < size; i++)
-		{
-			for(int j = 0; j < size; j++)
-			{	
-				map[i][j].setEnabled(false);
-			}
-		}
-	}
-
-	private void enableAll(){
-		for(int i = 0; i < size; i++)
-		{
-			for(int j = 0; j < size; j++)
-			{	
-				map[i][j].setEnabled(true);
-			}
-		}
-	}
-
-	private void revealAll(){
-		for(int i = 0; i < size; i++)
-		{ 
-			for(int j = 0; j < size; j++)
-			{	
-				map[i][j].reveal();
-			}
-		}
-		b_panel.refresh();
-	}
-
-	public int getSize(){
-		return size;
-	}
-
-	public Cell getCell(int i, int j){
-		return map[i][j];
-	}
-
-	public void stopTimer(){
-		timer.cancel();
-		timer.purge();
-	}
+    public void stopTimer() {
+        timer.cancel();
+        timer.purge();
+    }
 }

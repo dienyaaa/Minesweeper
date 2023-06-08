@@ -1,4 +1,5 @@
-package com.urfu.minesweeper;/*
+package com.urfu.minesweeper;
+/*
 BoardPanel is the single JPanel that all games get loaded to. The game
 data for a single game is stored in an attached GameData object.
 */
@@ -8,35 +9,30 @@ import java.awt.*;
 
 class BoardPanel extends JPanel{
 
-	private static final int ICONPIX = 32;
-	private GameData data;
+	private static final int ICON_PIX = 32;
+	private GameData gameData;
 	
-	public void updateData(GameData new_data){	
+	public void updateData(GameData newData){
 
-		if (data != null) {
-			data.stopTimer();
+		if (gameData != null) {
+			gameData.stopTimer();
 		}
 
 		removeAll();
-		data = new_data;	
+		gameData = newData;
 
-		int size = data.getSize();
-		setLayout(new GridLayout(size, size, 0, 0));
-		setPreferredSize(new Dimension( size * ICONPIX, size * ICONPIX));
+		int boardSize = gameData.getBoardSize();
+		setLayout(new GridLayout(boardSize, boardSize, 0, 0));
+		setPreferredSize(new Dimension( boardSize * ICON_PIX, boardSize * ICON_PIX));
 
-		for(int i=0; i < size; i++)
+		for(int i=0; i < boardSize; i++)
 		{
-			for(int j=0; j < size; j++)
+			for(int j=0; j < boardSize; j++)
 			{	
-				Cell current = data.getCell(i,j);
-				add(current);
+				Cell currentCell = gameData.getCell(i,j);
+				add(currentCell);
 			}
 		}
-		refresh();
-	}
-
-	public void refresh(){
 		repaint();
 	}
-
 }
